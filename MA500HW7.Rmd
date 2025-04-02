@@ -1,0 +1,205 @@
+---
+title: "MA500HW7"
+author: "Chang Lu"
+date: "2025-03-31"
+output: pdf_document
+---
+
+```{r}
+library(ggplot2)
+
+library(car)
+
+```
+
+### Question 1
+
+```{r}
+# Create the data
+df <- data.frame(
+  Type_Beat = rep(c("upper-class", "middle-class", "inner-city"), each = 3),
+  Course_Hours = rep(c(5, 10, 15), times = 3),
+  Score = c(34.4, 35.5, 39.2,     
+            30.2, 32.4, 34.7,     
+            20.1, 39.4, 54.3)    
+)
+
+# Plot interaction graph
+ggplot(df, aes(x = Course_Hours, y = Score, color = Type_Beat, group = Type_Beat)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Interaction Graph: Type Beat vs. Course Hours",
+       x = "Length of Human Relations Course (Hours)",
+       y = "Mean Test Score",
+       color = "Type of Beat") +
+  theme_minimal()
+```
+
+### Question 2
+
+```{r}
+# (b)
+set.seed(123)
+
+df <- expand.grid(Start_Angle = 1:3, Stop_Angle = 1:3)
+
+# Replicate each combination twice
+df <- df[rep(1:nrow(df), each = 2), ]
+
+# Add a random order column and shuffle
+df$Trial <- sample(1:nrow(df))
+
+# Order by randomized trial number
+df <- df[order(df$Trial), ]
+
+# Show the randomized design
+df
+```
+
+```{r}
+# (e)
+set.seed(1022)
+
+# Create the 3x3 factorial design with 2 replicates per cell
+design <- expand.grid(Start_Angle = 1:3, Stop_Angle = 1:3, Replicate = 1:2)
+
+# Simulate response variable (distance) with some made-up main effects and noise
+design$Distance <- with(design,
+                        50 +                                          # base distance
+                        5 * Start_Angle +                             # effect of start angle
+                        3 * Stop_Angle +                              # effect of stop angle
+                        2 * Start_Angle * Stop_Angle +                # interaction effect
+                        rnorm(nrow(design), mean = 0, sd = sqrt(12))  # random error
+)
+
+head(design)
+summary(design)
+```
+
+```{r}
+# (f)
+# Make sure Start_Angle and Stop_Angle are factors
+design$Start_Angle <- as.factor(design$Start_Angle)
+design$Stop_Angle <- as.factor(design$Stop_Angle)
+
+# Fit two-way ANOVA model with interaction
+anova_model <- aov(Distance ~ Start_Angle * Stop_Angle, data = design)
+
+summary(anova_model)
+```
+
+```{r}
+# (g)
+# Interaction Plot
+interaction.plot(
+  x.factor = design$Start_Angle,
+  trace.factor = design$Stop_Angle,
+  response = design$Distance,
+  fun = mean,
+  type = "b", col = 1:3, pch = 1:3,
+  xlab = "Start Angle", ylab = "Mean Distance",
+  trace.label = "Stop Angle",
+  main = "Interaction Plot: Start Angle × Stop Angle"
+)
+```
+
+
+### Question 3
+```{r}
+# Dataframe
+df <- data.frame(
+  Temperature = rep(c(120, 180), 2),
+  FlowRate = factor(rep(c("Low", "High"), each = 2)),
+  Resolution = c(10, 12, 13, 18)
+)
+
+ggplot(df, aes(x = Temperature, y = Resolution, color = FlowRate, group = FlowRate)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  labs(title = "Interaction Graph: Column Temperature × Gas Flow Rate",
+       x = "Column Temperature (°C)",
+       y = "Mean Resolution",
+       color = "Gas Flow Rate") +
+  theme_minimal()
+```
+
+### Question 4
+
+```{r}
+# (c)
+set.seed(1022)
+
+design_1 <- expand.grid(
+  Brand = c("A", "B"),
+  Power = c("Low", "Medium", "High"),
+  Time = c(2, 2.5, 3, 3.5),
+  Rep = 1:8
+)
+
+# Randomize order
+design_1$Trial <- sample(1:nrow(design_1))
+design_1 <- design_1[order(design_1$Trial), ]
+head(design_1)
+summary(design_1)
+```
+
+
+```{r}
+# (e)
+# Genarate edible as response variable
+set.seed(1022)
+
+design_1$Edible <- with(design_1,
+  70 +                                       # base % edible
+  ifelse(Brand == "B", 2, 0) +               # Brand B slightly better
+  ifelse(Power == "Low", -3,
+         ifelse(Power == "Medium", 0, 3)) +  # increasing trend in power
+  -1.5 * (as.numeric(Time) - 2.75)^2 +       # optimal time at 2.75
+  rnorm(nrow(design_1), mean = 0, sd = 2)      # random error
+)
+
+# Polynomial contrast analysis
+design_1$Power <- factor(design_1$Power, levels = c("Low", "Medium", "High"), ordered = TRUE)
+
+model <- aov(Edible ~ Brand + poly(as.numeric(Power), 2) + poly(Time, 3), data = design_1)
+summary(model)
+```
+### Question 7
+
+```{r}
+# (b)
+set.seed(1022)  # For reproducibility of design
+
+# Step 1: Create full factorial design
+factors <- expand.grid(
+  Flame   = factor(c("Low", "High")),
+  PanSize = factor(c("Small", "Large")),
+  Cover   = factor(c("None", "Glass")),
+  Salt    = factor(c("No", "Yes"))
+)
+
+# Step 2: Replicate each combination 6 times
+design_new <- factors[rep(1:nrow(factors), each = 6), ]
+design_new$Replicate <- rep(1:6, times = nrow(factors))
+
+# Step 4: Randomize run order
+design_new$Trial <- sample(1:nrow(design_new))
+design_new <- design_new[order(design_new$Trial), ]
+
+design_new
+```
+
+```{r}
+# (d)
+boiling_data <- read.csv("Boiling_Time_Data.csv")
+
+boiling_model <- aov(Time ~ Flame * PanSize * Cover * Salt, data = boiling_data)
+boiling_model
+summary(boiling_model)
+```
+
+
+```{r}
+# Since R gave the warning "Estimated effects may be unbalanced", we should consider using Type III Sum of Squares, which is better when the design is not perfectly balanced.
+Anova(boiling_model, type = 3)
+```
